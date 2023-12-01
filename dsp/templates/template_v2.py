@@ -154,8 +154,6 @@ class TemplateV2:
                 break
             idx += 1
 
-        import dspy
-
         idx = min(idx, len(self.fields) - 1)
         while raw_pred != "" and idx < len(self.fields):
             if idx < len(self.fields) - 1:
@@ -163,19 +161,12 @@ class TemplateV2:
                 offset = raw_pred.find(next_field_name)
 
                 if offset >= 0:
-                    if dspy.settings.release >= 20231003:
-                        example[self.fields[idx].output_variable] = raw_pred[:offset].strip().rstrip('---').strip()
-                        raw_pred = raw_pred[offset + len(next_field_name) :].strip().rstrip('---').strip()
-                    else:
-                        example[self.fields[idx].output_variable] = raw_pred[:offset].strip()
-                        raw_pred = raw_pred[offset + len(next_field_name) :].strip()
+                    example[self.fields[idx].output_variable] = raw_pred[:offset].strip().split('---')[0].split(self.fields[0].name)[0].strip()
+                    raw_pred = raw_pred[offset + len(next_field_name) :].strip().split('---')[0].split(self.fields[0].name)[0].strip()
 
                     idx += 1
                 else:
-                    if dspy.settings.release >= 20231003:
-                        example[self.fields[idx].output_variable] = raw_pred.strip().rstrip('---').strip()
-                    else:
-                        example[self.fields[idx].output_variable] = raw_pred.strip()
+                    example[self.fields[idx].output_variable] = raw_pred.strip().split('---')[0].split(self.fields[0].name)[0].strip()
 
                     raw_pred = ""
                     idx += 1
@@ -184,10 +175,7 @@ class TemplateV2:
             else:
                 assert idx == len(self.fields) - 1, (idx, len(self.fields))
 
-                if dspy.settings.release >= 20231003:
-                    example[self.fields[idx].output_variable] = raw_pred.strip().rstrip('---').strip()
-                else:
-                    example[self.fields[idx].output_variable] = raw_pred.strip()
+                example[self.fields[idx].output_variable] = raw_pred.strip().split('---')[0].split(self.fields[0].name)[0].strip()
 
                 break
 

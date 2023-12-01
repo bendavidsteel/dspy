@@ -73,10 +73,12 @@ class HFModel(LM):
                     #     self.model = AutoModelClass.from_pretrained(peft_config.base_model_name_or_path, return_dict=True, load_in_8bit=True, device_map=hf_device_map)
                     #     self.model = PeftModel.from_pretrained(self.model, checkpoint)
                     # else:
-                    self.model = AutoModelClass.from_pretrained(checkpoint, **model_kwargs).to("cuda")
+                    self.model = AutoModelClass.from_pretrained(checkpoint, **model_kwargs)
+                    # if .to("cuda")
                 else:
-                    self.model = AutoModelClass.from_pretrained(model, **model_kwargs).to("cuda")
-                self.drop_prompt_from_output = False
+                    self.model = AutoModelClass.from_pretrained(model, **model_kwargs)
+                    # .to("cuda")
+                self.drop_prompt_from_output = True
             except ValueError:
                 self.model = AutoModelForCausalLM.from_pretrained(
                     model if checkpoint is None else checkpoint,
