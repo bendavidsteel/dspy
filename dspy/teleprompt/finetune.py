@@ -5,6 +5,7 @@ import tqdm
 import random
 
 import ujson
+import torch
 from datasets.fingerprint import Hasher
 
 # from dspy.primitives import Example
@@ -89,6 +90,9 @@ class BootstrapFinetune(Teleprompter):
 
                     finetune_data[name_].append(dict(prompt=prompt, completion=completion))
 
+        dsp.settings.lm.model.to('cpu')
+        torch.cuda.empty_cache()
+
         for name_ in finetune_data:
             random.Random(0).shuffle(finetune_data[name_])
             print(name_, len(finetune_data[name_]))
@@ -142,7 +146,15 @@ class BootstrapFinetune(Teleprompter):
             best_ckpt_path = finetune_hf(training_data_path, target, compiler_config_)
 
             print(f"#> Best checkpoint path: {best_ckpt_path} for {name}")
-            finetune_models[name] = dsp.HFModel(model=target, checkpoint=best_ckpt_path) # best_ckpt_path
+
+            torch.cuda.empty_cache()
+
+            model_kwargs = {}
+            if bf16:
+                model_kwargs['torch_dtype'] = torch.bfloat16
+                model_kwargs['use_flash_attention_2'] = True
+            
+            finetune_models[name] = dsp.HFModel(model=target, checkpoint=best_ckpt_path, model_kwargs=model_kwargs) # best_ckpt_path
 
         #
         # Set the LMs to the finetuned ones, per module

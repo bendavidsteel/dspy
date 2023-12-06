@@ -24,7 +24,7 @@ from transformers import (
     Seq2SeqTrainingArguments,
     DataCollatorForSeq2Seq,
 )
-# from peft import get_peft_model, LoraConfig, TaskType
+from peft import get_peft_model, LoraConfig, TaskType
 from transformers.trainer_callback import TrainerCallback
 
 # from dsp.modules.finetuning.fid import *
@@ -289,6 +289,7 @@ def _train_causal(model, tokenizer, tokenized_dataset, metric, config):
         report_to="tensorboard",
         fp16=config['fp16'],
         bf16=config['bf16'],
+        bf16_full_eval=config['bf16'],
     )
 
     # Create trainer instance
@@ -337,7 +338,12 @@ def finetune_hf(data_path, target, config):
         # load model
         AutoModelClass = AutoModelForSeq2SeqLM if encoder_decoder_model else AutoModelForCausalLM
         if config['peft']:
-            model = AutoModelClass.from_pretrained(target, device_map='auto')
+            model_kwargs = {}
+            if config['bf16']:
+                model_kwargs['torch_dtype'] = torch.bfloat16
+            if 'Mistral' in architecture:
+                model_kwargs['use_flash_attention_2'] = True
+            model = AutoModelClass.from_pretrained(target, **model_kwargs)
             task_type = TaskType.SEQ_2_SEQ_LM if encoder_decoder_model else TaskType.CAUSAL_LM
             peft_config = LoraConfig(task_type=task_type, inference_mode=False, r=8, lora_alpha=32, lora_dropout=0.1)
             model = get_peft_model(model, peft_config)
